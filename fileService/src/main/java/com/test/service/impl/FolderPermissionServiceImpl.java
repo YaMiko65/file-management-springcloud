@@ -21,19 +21,24 @@ public class FolderPermissionServiceImpl extends ServiceImpl<FolderPermissionMap
     @Override
     @Transactional
     public boolean grantPermission(Long folderId, Long userId, Integer permission) {
-        // 先删除已有权限
+        // 修复缺陷7：使用更新或新增逻辑，避免先删后增导致的权限空窗期
         FolderPermission existing = permissionMapper.selectByUserIdAndFolderId(userId, folderId);
+
         if (existing != null) {
-            removeById(existing.getId());
+            // 如果权限已存在，直接更新权限字段和时间
+            existing.setPermission(permission);
+            existing.setUpdateTime(new Date());
+            return updateById(existing);
+        } else {
+            // 如果权限不存在，则执行新增
+            FolderPermission newPermission = new FolderPermission();
+            newPermission.setFolderId(folderId);
+            newPermission.setUserId(userId);
+            newPermission.setPermission(permission);
+            newPermission.setCreateTime(new Date());
+            newPermission.setUpdateTime(new Date());
+            return save(newPermission);
         }
-        // 新增权限
-        FolderPermission newPermission = new FolderPermission();
-        newPermission.setFolderId(folderId);
-        newPermission.setUserId(userId);
-        newPermission.setPermission(permission);
-        newPermission.setCreateTime(new Date());
-        newPermission.setUpdateTime(new Date());
-        return save(newPermission);
     }
 
     @Override
@@ -48,6 +53,7 @@ public class FolderPermissionServiceImpl extends ServiceImpl<FolderPermissionMap
         FolderPermission permission = permissionMapper.selectByUserIdAndFolderId(userId, folderId);
         return permission != null ? permission.getPermission() : 0; // 0-无权限
     }
+
     @Override
     @Transactional
     public boolean deleteByUserId(Long userId) {

@@ -26,4 +26,7 @@ public class File {
     private Date createTime;
     private Date updateTime;
 
+    // 新增：用于存储查询时联表获取的权限值
+    @TableField(exist = false)
+    private Integer currentUserPermission;
 }

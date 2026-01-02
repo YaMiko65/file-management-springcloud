@@ -24,64 +24,52 @@ public class FileController {
 
     @PostMapping("/getByFolderId")
     public Page<File> getByFolderId(@RequestBody Page<File> page,@RequestParam("folderId") Long folderId){
-        log.debug("getByFolderId:接收到的参数：page:{},folderId:{}",page,folderId);
         IPage<File> filePage = fileService.getByFolderId(page, folderId);
-        log.debug("fileService.getByFolderId:{}",filePage);
         return (Page<File>) filePage;
     }
+
     @PostMapping("/getAll")
     public Page<File> getAll(@RequestBody Page<File> page){
-        log.debug("getAll:接收到的参数：page:{}",page);
         IPage<File> filePage = fileService.getAll(page);
-        log.debug("fileService.getAll:{}",filePage);
         return (Page<File>) filePage;
     }
 
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public boolean upload(
-            @RequestPart("file") List<MultipartFile> fileList, // 修改处：将 "fileList" 改为 "file" 以匹配 Client 端定义
+            @RequestPart("file") List<MultipartFile> fileList,
             @RequestParam("userId") Long userId,
             @RequestParam("folderId") Long folderId,
             @RequestParam("ipAddress") String ipAddress
     ){
-        log.debug("upload:接收到的参数：userId:{}\nfolderId:{}\nipAddress:{}",userId,folderId,ipAddress);
-        // 校验文件列表是否为空
         if (fileList == null || fileList.isEmpty()) {
-            log.error("上传失败：文件列表为空");
             return false;
         }
         MultipartFile file = fileList.get(0);
-        boolean upload = fileService.upload(file, userId, folderId, ipAddress);
-        log.debug("fileService.upload:{}",upload);
-        return upload;
+        return fileService.upload(file, userId, folderId, ipAddress);
     }
 
     @GetMapping("/getByUserId/{userId}")
     public List<File> getByUserId(@PathVariable("userId") Long userId){
-        log.debug("getByUserId:接收到的参数：userId:{}",userId);
-        List<File> files = fileService.getByUserId(userId);
-        log.debug("fileService.getByUserId:{}",files);
-        return files;
+        return fileService.getByUserId(userId);
     }
+
+    @GetMapping("/getAccessibleFiles/{userId}")
+    public List<File> getAccessibleFiles(@PathVariable("userId") Long userId){
+        return fileService.getAccessibleFiles(userId);
+    }
+
     @GetMapping("/getById/{id}")
     public File getById(@PathVariable("id") Long id){
-        log.debug("getById:接收到的参数：id:{}",id);
-        File file = fileService.getById(id);
-        log.debug("fileService.getById:{}",file);
-        return file;
+        return fileService.getById(id);
     }
+
     @GetMapping("/delete/{id}/{userId}")
     public boolean delete(@PathVariable("id") Long id,@PathVariable("userId") Long userId){
-        log.debug("delete:接收到的参数：id:{},userId:{}",id,userId);
-        boolean delete = fileService.delete(id, userId);
-        log.debug("fileService.delete:{}",delete);
-        return delete;
+        return fileService.delete(id, userId);
     }
+
     @GetMapping("/deleteByUserId/{userId}")
     public boolean deleteByUserId(@PathVariable("userId") Long userId){
-        log.debug("deleteByUserId:接收到的参数：userId:{}",userId);
-        boolean b = fileService.deleteByUserId(userId);
-        log.debug("fileService.deleteByUserId:{}",b);
-        return b;
+        return fileService.deleteByUserId(userId);
     }
 }

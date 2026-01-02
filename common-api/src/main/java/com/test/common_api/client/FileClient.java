@@ -30,6 +30,10 @@ public interface FileClient {
     );
     @GetMapping("/getByUserId/{userId}")
     public List<File> getByUserId(@PathVariable("userId") Long userId);
+
+    @GetMapping("/getAccessibleFiles/{userId}")
+    public List<File> getAccessibleFiles(@PathVariable("userId") Long userId);
+
     @GetMapping("/getById/{id}")
     public File getById(@PathVariable("id") Long id);
     @GetMapping("/delete/{id}/{userId}")

@@ -18,4 +18,7 @@ public class File {
     private Date createTime;
     private Date updateTime;
 
+    // 新增：当前用户对该文件的权限（1-只读，2-读写，3-管理）
+    // 该字段不存入文件表，而是通过关联查询得出
+    private Integer currentUserPermission;
 }

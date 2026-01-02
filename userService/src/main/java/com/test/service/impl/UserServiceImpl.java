@@ -23,7 +23,7 @@ import java.util.List;
  */
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
-    
+
     @Autowired
     private UserMapper userMapper;
 
@@ -32,9 +32,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Autowired
     private OperationLogClient operationLogClient;
-
-
-
 
     @Override
     @Transactional
@@ -45,7 +42,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         return null;
     }
-    
 
     @Override
     @Transactional
@@ -96,13 +92,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         fileClient.deleteFolderByUserId(userId);
 
         // 2. 删除用户关联的文件
-        List<File> userFiles = fileClient.getByUserId(userId);
-        for (File file : userFiles) {
-            fileClient.delete(file.getId(), userId);
-        }
+        // 修复：调用批量删除接口，避免遍历调用单删接口导致的权限模拟问题
+        fileClient.deleteByUserId(userId);
 
-        // 3. 删除用户的操作日志
-        operationLogClient.remove(new QueryWrapper<OperationLog>().eq("user_id", userId));
+        // 3. 删除用户的操作日志（该用户产生的操作记录）
+        operationLogClient.deleteByUserId(userId);
 
         // 4. 删除用户本身
         return removeById(userId);
@@ -123,7 +117,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 .like("name", keyword);
         return userMapper.selectPage(page, queryWrapper);
     }
-
 
     @Override
     @Transactional
@@ -195,5 +188,4 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
         return save(user); // 自动包含name字段
     }
-
 }
