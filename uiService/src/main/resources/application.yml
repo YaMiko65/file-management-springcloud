@@ -1,0 +1,39 @@
+spring:
+  application:
+    name: uiService
+  datasource:
+    url: jdbc:mysql://localhost:3306/filemanagement?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai
+    username: root
+    password: 123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    mode: HTML5
+    encoding: UTF-8
+    cache: false
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 5000000MB
+      max-request-size: 5000000MB
+
+mybatis-plus:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.test.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+server:
+  port: 8080
+file:
+  upload-path: C:\Users\27681\OneDrive\Desktop
+  static-path-pattern: C:\Users\27681\OneDrive\Desktop
+logging:
+  level:
+    com.test: debug

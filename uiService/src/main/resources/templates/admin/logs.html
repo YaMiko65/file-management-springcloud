@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>操作日志</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css">
+    <style>
+        .sidebar {
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 250px;
+            padding-top: 20px;
+            background-color: #f8f9fa;
+            border-right: 1px solid #e9ecef;
+        }
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+        }
+        .navbar {
+            margin-left: 250px;
+        }
+        .log-row {
+            transition: background-color 0.2s;
+        }
+        .log-row:hover {
+            background-color: #f8f9fa;
+        }
+        .operation-type {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .operation-upload {
+            background-color: #e7f3ff;
+            color: #0066cc;
+        }
+        .operation-download {
+            background-color: #e6ffed;
+            color: #006622;
+        }
+        .operation-delete {
+            background-color: #ffeef0;
+            color: #cc0011;
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">文件管理系统</a>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <span class="nav-link">管理员，<span th:text="${user.username}"></span></span>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/logout}">退出登录</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 侧边栏 -->
+    <div class="sidebar">
+        <div class="list-group list-group-flush">
+            <a th:href="@{/admin/files}" class="list-group-item list-group-item-action">文件管理</a>
+            <a th:href="@{/admin/folders}" class="list-group-item list-group-item-action">课程管理</a> <!-- 新增 -->
+            <a th:href="@{/admin/folders/batch-upload}" class="list-group-item list-group-item-action">批量操作</a>
+            <a th:href="@{/admin/users}" class="list-group-item list-group-item-action">用户管理</a>
+            <a th:href="@{/admin/logs}" class="list-group-item list-group-item-action">操作日志</a>
+        </div>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="main-content">
+        <!-- 日志列表 -->
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">操作日志</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>教职工号</th>
+                                <th>用户姓名</th>
+                                <th>操作文件</th>
+                                <th>操作类型</th>
+                                <th>操作时间</th>
+                                <th>IP地址</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="log : ${logs}" class="log-row">
+                                <td th:text="${log.username}"></td>
+                                <td th:text="${log.userRealName}"></td>
+                                <td th:text="${log.fileName}"></td>
+                                <td>
+                                    <span th:class="|operation-type operation-${log.operationType}|" th:text="${log.operationType}"></span>
+                                </td>
+                                <td th:text="${#dates.format(log.operationTime, 'yyyy-MM-dd HH:mm:ss')}"></td>
+                                <td th:text="${log.ipAddress}"></td>
+                            </tr>
+                            <tr th:if="${logs.size() == 0}">
+                                <td colspan="5" class="text-center">暂无日志记录</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div th:if="${totalItems > 0}" class="d-flex justify-content-center mt-4">
+                    <nav>
+                        <ul class="pagination">
+                            <!-- 首页 -->
+                            <li class="page-item" th:classappend="${currentPage == 1 ? 'disabled' : ''}">
+                                <a class="page-link" th:href="@{/admin/logs(pageNum=1, pageSize=${pageSize})}">首页</a>
+                            </li>
+
+                            <!-- 上一页 -->
+                            <li class="page-item" th:classappend="${currentPage == 1 ? 'disabled' : ''}">
+                                <a class="page-link" th:href="@{/admin/logs(pageNum=${currentPage - 1}, pageSize=${pageSize})}">上一页</a>
+                            </li>
+
+                            <!-- 页码列表 -->
+                            <li th:each="i : ${#numbers.sequence(1, totalPages)}"
+                                class="page-item"
+                                th:classappend="${i == currentPage ? 'active' : ''}">
+                                <a class="page-link" th:href="@{/admin/logs(pageNum=${i}, pageSize=${pageSize})}" th:text="${i}"></a>
+                            </li>
+
+                            <!-- 下一页 -->
+                            <li class="page-item" th:classappend="${currentPage == totalPages ? 'disabled' : ''}">
+                                <a class="page-link" th:href="@{/admin/logs(pageNum=${currentPage + 1}, pageSize=${pageSize})}">下一页</a>
+                            </li>
+
+                            <!-- 末页 -->
+                            <li class="page-item" th:classappend="${currentPage == totalPages ? 'disabled' : ''}">
+                                <a class="page-link" th:href="@{/admin/logs(pageNum=${totalPages}, pageSize=${pageSize})}">末页</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+
+                <!-- 分页统计信息 -->
+                <div th:if="${totalItems > 0}" class="text-center text-muted mt-2">
+                    显示第 <span th:text="${(currentPage - 1) * pageSize + 1}"></span> -
+                    <span th:text="${currentPage * pageSize > totalItems ? totalItems : currentPage * pageSize}"></span> 条，
+                    共 <span th:text="${totalItems}"></span> 条记录
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

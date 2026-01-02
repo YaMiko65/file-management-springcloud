@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>课程管理</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css">
+    <style>
+        .sidebar {
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 250px;
+            padding-top: 20px;
+            background-color: #f8f9fa;
+            border-right: 1px solid #e9ecef;
+        }
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+        }
+        .navbar {
+            margin-left: 250px;
+        }
+    </style>
+</head>
+<body>
+<!-- 顶部导航栏 -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="#">文件管理系统</a>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <span class="nav-link">管理员，<span th:text="${user.username}"></span></span>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/logout}">退出登录</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- 侧边栏 -->
+<div class="sidebar">
+    <div class="list-group list-group-flush">
+        <a th:href="@{/admin/files}" class="list-group-item list-group-item-action">文件管理</a>
+        <a th:href="@{/admin/folders}" class="list-group-item list-group-item-action active">课程管理</a>
+        <a th:href="@{/admin/folders/batch-upload}" class="list-group-item list-group-item-action">批量操作</a>
+        <a th:href="@{/admin/users}" class="list-group-item list-group-item-action">用户管理</a>
+        <a th:href="@{/admin/logs}" class="list-group-item list-group-item-action">操作日志</a>
+    </div>
+</div>
+
+<!-- 主内容区 -->
+<div class="main-content">
+    <!-- 消息提示 -->
+    <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <span th:text="${message}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <span th:text="${error}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <!-- 创建课程表单 -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">创建课程</h5>
+            <form th:action="@{/admin/folders/create}" method="post">
+                <div class="mb-3">
+                    <input type="text" class="form-control" name="folderName" placeholder="请输入课程名称" required>
+                </div>
+                <button type="submit" class="btn btn-primary">创建</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 课程列表 -->
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">课程列表</h5>
+            <table class="table table-hover">
+                <thead>
+                <tr>
+                    <th>课程名称</th>
+                    <th>创建时间</th>
+                    <th>操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="folder : ${folders}">
+                    <td th:text="${folder.name}"></td>
+                    <td th:text="${#dates.format(folder.createTime, 'yyyy-MM-dd HH:mm:ss')}"></td>
+                    <td>
+                        <a th:href="@{/admin/folders/permissions/{id}(id=${folder.id})}" class="btn btn-sm btn-outline-primary">权限管理</a>
+                        <a th:href="@{/admin/folders/delete/{id}(id=${folder.id})}" class="btn btn-sm btn-outline-danger" onclick="return confirm('确定删除？课程必须为空')">删除</a>
+                    </td>
+                </tr>
+                <tr th:if="${folders.size() == 0}">
+                    <td colspan="3" class="text-center">暂无课程</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div th:if="${totalItems > 0}" class="d-flex justify-content-center mt-4">
+            <nav>
+                <ul class="pagination">
+                    <!-- 首页 -->
+                    <li class="page-item" th:classappend="${currentPage == 1 ? 'disabled' : ''}">
+                        <a class="page-link" th:href="@{/admin/folders(pageNum=1, pageSize=${pageSize})}">首页</a>
+                    </li>
+
+                    <!-- 上一页 -->
+                    <li class="page-item" th:classappend="${currentPage == 1 ? 'disabled' : ''}">
+                        <a class="page-link" th:href="@{/admin/folders(pageNum=${currentPage - 1}, pageSize=${pageSize})}">上一页</a>
+                    </li>
+
+                    <!-- 页码列表 -->
+                    <li th:each="i : ${#numbers.sequence(1, totalPages)}"
+                        class="page-item"
+                        th:classappend="${i == currentPage ? 'active' : ''}">
+                        <a class="page-link" th:href="@{/admin/folders(pageNum=${i}, pageSize=${pageSize})}" th:text="${i}"></a>
+                    </li>
+
+                    <!-- 下一页 -->
+                    <li class="page-item" th:classappend="${currentPage == totalPages ? 'disabled' : ''}">
+                        <a class="page-link" th:href="@{/admin/folders(pageNum=${currentPage + 1}, pageSize=${pageSize})}">下一页</a>
+                    </li>
+
+                    <!-- 末页 -->
+                    <li class="page-item" th:classappend="${currentPage == totalPages ? 'disabled' : ''}">
+                        <a class="page-link" th:href="@{/admin/folders(pageNum=${totalPages}, pageSize=${pageSize})}">末页</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+
+        <!-- 分页信息统计 -->
+        <div th:if="${totalItems > 0}" class="text-center text-muted mt-2">
+            显示第 <span th:text="${(currentPage - 1) * pageSize + 1}"></span> -
+            <span th:text="${currentPage * pageSize > totalItems ? totalItems : currentPage * pageSize}"></span> 条，
+            共 <span th:text="${totalItems}"></span> 条记录，共 <span th:text="${totalPages}"></span> 页
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

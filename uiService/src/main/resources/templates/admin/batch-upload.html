@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>批量操作</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css">
+    <style>
+        .sidebar {
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 250px;
+            padding-top: 20px;
+            background-color: #f8f9fa;
+            border-right: 1px solid #e9ecef;
+        }
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+        }
+        .navbar {
+            margin-left: 250px;
+        }
+    </style>
+</head>
+<body>
+<!-- 顶部导航栏 -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="#">文件管理系统</a>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <span class="nav-link">管理员，<span th:text="${user.username}"></span></span>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/logout}">退出登录</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- 侧边栏 -->
+<div class="sidebar">
+    <div class="list-group list-group-flush">
+        <a th:href="@{/admin/files}" class="list-group-item list-group-item-action">文件管理</a>
+        <a th:href="@{/admin/folders}" class="list-group-item list-group-item-action">课程管理</a>
+        <a th:href="@{/admin/folders/batch-upload}" class="list-group-item list-group-item-action active">批量操作</a>
+        <a th:href="@{/admin/users}" class="list-group-item list-group-item-action">用户管理</a>
+        <a th:href="@{/admin/logs}" class="list-group-item list-group-item-action">操作日志</a>
+    </div>
+</div>
+
+<!-- 主内容区 -->
+<div class="main-content">
+    <!-- 消息提示 -->
+    <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <span th:text="${message}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <span th:text="${error}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Excel批量操作</h5>
+            <p class="card-text">上传Excel文件批量创建课程、用户及分配权限</p>
+
+            <form th:action="@{/admin/folders/batch-process}" method="post" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label for="file" class="form-label">选择Excel文件</label>
+                    <input type="file" class="form-control" id="file" name="file" accept=".xlsx,.xls" required>
+                </div>
+
+                <div class="mb-3">
+                    <h6>Excel格式要求：</h6>
+                    <ul>
+                        <li>第一行为表头：课程名称、教职工号、用户姓名、权限类型</li>
+                        <li>第1列：课程名称</li>
+                        <li>第2列：教职工号（登录账号）</li>
+                        <li>第3列：用户姓名</li>
+                        <li>第4列：权限类型（1-只读，2-读写，3-管理）</li>
+                        <li>支持.xls和.xlsx格式</li>
+                    </ul>
+                </div>
+
+                <button type="submit" class="btn btn-primary">上传并处理</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

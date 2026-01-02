@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>课程权限管理</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        .sidebar {
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 250px;
+            padding-top: 20px;
+            background-color: #f8f9fa;
+            border-right: 1px solid #e9ecef;
+            transition: transform 0.3s ease;
+        }
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+            transition: margin-left 0.3s ease;
+        }
+        .navbar {
+            margin-left: 250px;
+            transition: margin-left 0.3s ease;
+        }
+        /* 权限标签样式 */
+        .permission-badge {
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+        .badge-read {
+            background-color: #6c757d;
+            color: white;
+        }
+        .badge-write {
+            background-color: #28a745;
+            color: white;
+        }
+        .badge-admin {
+            background-color: #007bff;
+            color: white;
+        }
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            .main-content, .navbar {
+                margin-left: 0;
+            }
+            .mobile-toggle {
+                display: block !important;
+            }
+        }
+        .mobile-toggle {
+            display: none;
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            z-index: 1050;
+        }
+        /* 操作按钮样式优化 */
+        .action-btn {
+            margin-left: 5px;
+        }
+        /* 表格悬停效果 */
+        .table-hover tbody tr:hover {
+            background-color: #f1f3f5;
+        }
+        /* 加载状态样式 */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+<!-- 移动端侧边栏切换按钮 -->
+<button class="btn btn-primary mobile-toggle" id="sidebarToggle">
+    <i class="fa fa-bars"></i>
+</button>
+
+<!-- 顶部导航栏 -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="#">文件管理系统</a>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <span class="nav-link">管理员，<span th:text="${user.username}"></span></span>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/logout}">退出登录</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- 侧边栏 -->
+<div class="sidebar" id="sidebar">
+    <div class="list-group list-group-flush">
+        <a th:href="@{/admin/files}" class="list-group-item list-group-item-action">文件管理</a>
+        <a th:href="@{/admin/folders}" class="list-group-item list-group-item-action active">课程管理</a>
+        <a th:href="@{/admin/folders/batch-upload}" class="list-group-item list-group-item-action">批量操作</a>
+        <a th:href="@{/admin/users}" class="list-group-item list-group-item-action">用户管理</a>
+        <a th:href="@{/admin/logs}" class="list-group-item list-group-item-action">操作日志</a>
+    </div>
+</div>
+
+<!-- 主内容区 -->
+<div class="main-content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 th:text="'课程：' + ${folder.name}"></h4>
+        <a href="#" th:href="@{/admin/folders}" class="btn btn-outline-secondary">
+            <i class="fa fa-arrow-left"></i> 返回课程列表
+        </a>
+    </div>
+
+    <!-- 操作消息提示（使用Toast组件） -->
+    <div class="toast-container position-fixed top-20 end-0 p-3">
+        <div id="successToast" class="toast bg-success text-white" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body" th:text="${message}"></div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+        <div id="errorToast" class="toast bg-danger text-white" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body" th:text="${error}"></div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 授权表单 -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+            <h5 class="card-title"><i class="fa fa-key me-2"></i>授予权限</h5>
+            <form id="grantForm" th:action="@{/admin/folders/permissions/grant}" method="post">
+                <input type="hidden" name="folderId" th:value="${folder.id}">
+
+                <div class="mb-3">
+                    <label class="form-label">选择用户</label>
+                    <select class="form-select" name="userId" id="userIdSelect" required>
+                        <option value="">-- 选择用户 --</option>
+                        <option th:each="user : ${allUsers}" th:value="${user.id}"
+                                th:text="${user.username + ' (' + user.name + ')'}"></option>
+                    </select>
+                    <div id="userPermissionHint" class="form-text mt-1"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">权限类型</label>
+                    <select class="form-select" name="permission" required>
+                        <option value="1">只读（可查看/下载）</option>
+                        <option value="2">读写（可上传/修改/删除自己的文件）</option>
+                        <option value="3">管理（完全控制课程）</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="grantBtn">
+                    <span id="grantBtnText">授予权限</span>
+                    <span id="grantLoading" class="loading d-none"></span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 现有权限列表 -->
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h5 class="card-title"><i class="fa fa-users me-2"></i>已授权用户</h5>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                    <tr>
+                        <th>用户信息</th>
+                        <th>权限类型</th>
+                        <th>授权时间</th>
+                        <th>操作</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="perm : ${permissions}">
+                        <td>
+                            <span th:text="${perm.username}"></span>
+                            <span th:text="(' (' + ${perm.userFullName} + ')')"></span>
+                        </td>
+                        <td>
+                                <span class="permission-badge"
+                                      th:classappend="${perm.permission == 1 ? 'badge-read' : (perm.permission == 2 ? 'badge-write' : 'badge-admin')}"
+                                      th:text="${perm.permission == 1 ? '只读' : (perm.permission == 2 ? '读写' : '管理')}">
+                                </span>
+                        </td>
+                        <td th:text="${#dates.format(perm.createTime, 'yyyy-MM-dd HH:mm:ss')}"></td>
+                        <td>
+                            <!-- 修改权限表单 -->
+                            <form th:action="@{/admin/folders/permissions/update}" method="post" class="d-inline">
+                                <input type="hidden" name="folderId" th:value="${folder.id}">
+                                <input type="hidden" name="userId" th:value="${perm.userId}">
+                                <select class="form-select form-select-sm d-inline w-auto" name="permission"
+                                        onchange="this.form.submit()">
+                                    <option th:value="1" th:selected="${perm.permission == 1}">只读</option>
+                                    <option th:value="2" th:selected="${perm.permission == 2}">读写</option>
+                                    <option th:value="3" th:selected="${perm.permission == 3}">管理</option>
+                                </select>
+                            </form>
+
+                            <!-- 删除权限按钮 -->
+                            <form th:action="@{/admin/folders/permissions/delete}" method="post" class="d-inline">
+                                <input type="hidden" name="folderId" th:value="${folder.id}">
+                                <input type="hidden" name="userId" th:value="${perm.userId}">
+                                <button type="submit" class="btn btn-sm btn-danger action-btn"
+                                        onclick="return confirm('确定要撤销该用户的权限吗？')">
+                                    <i class="fa fa-trash-o"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    <tr th:if="${permissions.size() == 0}">
+                        <td colspan="4" class="text-center text-muted">暂无授权用户</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // 移动端侧边栏切换
+    document.getElementById('sidebarToggle').addEventListener('click', function() {
+        document.getElementById('sidebar').classList.toggle('show');
+    });
+
+    // 表单提交加载状态
+    const grantForm = document.getElementById('grantForm');
+    const grantBtn = document.getElementById('grantBtn');
+    const grantBtnText = document.getElementById('grantBtnText');
+    const grantLoading = document.getElementById('grantLoading');
+
+    grantForm.addEventListener('submit', function() {
+        grantBtn.disabled = true;
+        grantBtnText.classList.add('d-none');
+        grantLoading.classList.remove('d-none');
+    });
+
+    // 检查用户当前权限并提示
+    const userIdSelect = document.getElementById('userIdSelect');
+    const userPermissionHint = document.getElementById('userPermissionHint');
+    const folderId = [[${folder.id}]]; // Thymeleaf变量注入
+    const permissions = [[${permissions}]]; // 已授权列表
+
+    userIdSelect.addEventListener('change', function() {
+        const selectedUserId = this.value;
+        if (!selectedUserId) {
+            userPermissionHint.textContent = '';
+            return;
+        }
+
+        // 查找该用户是否已有权限
+        const existingPerm = permissions.find(perm => perm.userId == selectedUserId);
+        if (existingPerm) {
+            const permText = existingPerm.permission == 1 ? '只读' :
+                existingPerm.permission == 2 ? '读写' : '管理';
+            userPermissionHint.innerHTML = `<i class="fa fa-info-circle text-info"></i> 该用户当前权限：<strong>${permText}</strong>（选择新权限将覆盖原有设置）`;
+        } else {
+            userPermissionHint.innerHTML = '<i class="fa fa-check-circle text-success"></i> 该用户暂无权限，可授予新权限';
+        }
+    });
+
+    // 自动显示消息提示
+    document.addEventListener('DOMContentLoaded', function() {
+        const successToast = new bootstrap.Toast(document.getElementById('successToast'));
+        const errorToast = new bootstrap.Toast(document.getElementById('errorToast'));
+
+        if (document.getElementById('successToast').querySelector('.toast-body').textContent.trim()) {
+            successToast.show();
+        }
+        if (document.getElementById('errorToast').querySelector('.toast-body').textContent.trim()) {
+            errorToast.show();
+        }
+    });
+</script>
+</body>
+</html>

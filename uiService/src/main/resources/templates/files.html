@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件管理系统 - 文件列表</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css">
+    <style>
+        /* 上传进度条动画优化 */
+        .progress-bar-animated {
+            animation: progress-bar-stripes 1s linear infinite;
+        }
+
+        @keyframes progress-bar-stripes {
+            0% { background-position: 1rem 0; }
+            100% { background-position: 0 0; }
+        }
+
+        /* 进度文本样式 */
+        #progressText {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+
+
+        .sidebar {
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 250px;
+            padding-top: 20px;
+            background-color: #f8f9fa;
+            border-right: 1px solid #e9ecef;
+        }
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+        }
+        .navbar {
+            margin-left: 250px;
+        }
+        .file-icon {
+            font-size: 24px;
+            margin-right: 10px;
+        }
+        .file-row {
+            transition: background-color 0.2s;
+        }
+        .file-row:hover {
+            background-color: #f8f9fa;
+        }
+        .file-actions {
+            visibility: hidden;
+        }
+        .file-row:hover .file-actions {
+            visibility: visible;
+        }
+    </style>
+</head>
+<body>
+<!-- 顶部导航栏 -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="#">文件管理系统</a>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <span class="nav-link">欢迎，<span th:text="${user.username}"></span></span>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/user/editPassword}">修改密码</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/logout}">退出登录</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- 侧边栏 -->
+<div class="sidebar">
+    <div class="list-group list-group-flush">
+        <a href="#" class="list-group-item list-group-item-action active">我的文件</a>
+    </div>
+</div>
+
+<!-- 主内容区 -->
+<div class="main-content">
+    <!-- 消息提示 -->
+    <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <span th:text="${message}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <span th:text="${error}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <!-- 文件上传区域 -->
+    <!-- src/main/resources/templates/files.html 上传表单部分 -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">上传文件</h5>
+            <!-- 移除form的action和method，改为通过JS处理 -->
+            <div id="uploadForm">
+                <div class="mb-3">
+                    <label for="folderId" class="form-label">选择课程</label>
+                    <select class="form-select" id="folderId" name="folderId" required>
+                        <option value="">-- 请选择课程 --</option>
+                        <option th:each="folder : ${authorizedFolders}"
+                                th:value="${folder.id}"
+                                th:text="${folder.name}"></option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <input type="file" class="form-control" id="file" name="file" required>
+                </div>
+
+                <!-- 上传按钮带加载动画 -->
+                <button type="button" class="btn btn-primary" id="uploadBtn">
+                    <span id="btnText">上传</span>
+                    <span id="btnLoading" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                </button>
+
+                <!-- 上传进度条（默认隐藏） -->
+                <div class="progress mt-3 d-none" id="progressContainer">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated"
+                         role="progressbar"
+                         id="progressBar"
+                         style="width: 0%"></div>
+                </div>
+
+                <!-- 进度文本提示 -->
+                <div class="text-center mt-2 d-none" id="progressText"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 文件列表 -->
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">我的文件</h5>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                    <tr>
+                        <th>文件名</th>
+                        <th>大小</th>
+                        <th>上传时间</th>
+                        <th>操作</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="file : ${files}" class="file-row">
+                        <td>
+                            <i class="fa fa-file-o file-icon"></i>
+                            <span th:text="${file.fileName}"></span>
+                        </td>
+                        <td th:text="${#numbers.formatDecimal(file.fileSize / 1024, 0, 2)} + ' KB'"></td>
+                        <td th:text="${#dates.format(file.createTime, 'yyyy-MM-dd HH:mm:ss')}"></td>
+                        <td>
+                            <div class="file-actions">
+                                <a th:href="@{/files/download/{id}(id=${file.id})}" class="btn btn-sm btn-outline-primary">下载</a>
+                                <a th:href="@{/files/delete/{id}(id=${file.id})}" class="btn btn-sm btn-outline-danger" onclick="return confirm('确定要删除此文件吗？')">删除</a>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr th:if="${files.size() == 0}">
+                        <td colspan="4" class="text-center">暂无文件</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const uploadBtn = document.getElementById('uploadBtn');
+        const fileInput = document.getElementById('file');
+        const folderSelect = document.getElementById('folderId');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        const btnText = document.getElementById('btnText');
+        const btnLoading = document.getElementById('btnLoading');
+
+        uploadBtn.addEventListener('click', function() {
+            // 验证输入
+            if (!fileInput.files.length) {
+                alert('请选择文件');
+                return;
+            }
+            if (!folderSelect.value) {
+                alert('请选择课程');
+                return;
+            }
+
+            // 准备表单数据
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            formData.append('folderId', folderSelect.value);
+
+            // 初始化上传状态
+            uploadBtn.disabled = true;
+            btnText.classList.add('d-none');
+            btnLoading.classList.remove('d-none');
+            progressContainer.classList.remove('d-none');
+            progressText.classList.remove('d-none');
+            progressText.textContent = '准备上传...';
+
+            // 创建带进度监听的请求
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/files/upload', true);
+
+            // 监听进度事件
+            xhr.upload.addEventListener('progress', function(e) {
+                if (e.lengthComputable) {
+                    const percent = Math.round((e.loaded / e.total) * 100);
+                    progressBar.style.width = percent + '%';
+                    progressText.textContent = `上传中... ${percent}%`;
+                }
+            });
+
+            // 上传完成处理
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    progressText.textContent = '上传成功！正在刷新列表...';
+                    progressBar.style.width = '100%';
+                    // 延迟刷新，让用户看到完成状态
+                    setTimeout(() => window.location.reload(), 800);
+                } else {
+                    progressText.textContent = '上传失败，请重试';
+                    progressBar.className = 'progress-bar bg-danger';
+                    // 恢复上传按钮状态
+                    setTimeout(() => {
+                        resetUploadState();
+                    }, 2000);
+                }
+            };
+
+            // 网络错误处理
+            xhr.onerror = function() {
+                progressText.textContent = '网络错误，请检查连接';
+                progressBar.className = 'progress-bar bg-danger';
+                setTimeout(() => {
+                    resetUploadState();
+                }, 2000);
+            };
+
+            // 发送请求
+            xhr.send(formData);
+        });
+
+        // 重置上传状态函数
+        function resetUploadState() {
+            uploadBtn.disabled = false;
+            btnText.classList.remove('d-none');
+            btnLoading.classList.add('d-none');
+            progressContainer.classList.add('d-none');
+            progressText.classList.add('d-none');
+            progressBar.style.width = '0%';
+            progressBar.className = 'progress-bar progress-bar-striped progress-bar-animated';
+        }
+    });
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/js/bootstrap.bundle.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+</body>
+</html>
