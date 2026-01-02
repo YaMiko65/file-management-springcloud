@@ -32,8 +32,8 @@ mybatis-plus:
 server:
   port: 8002
 file:
-  upload-path: C:/a
-  static-path-pattern: C:/a
+  upload-path: C:\Users\27681\OneDrive\Desktop
+  static-path-pattern: C:\Users\27681\OneDrive\Desktop
 logging:
   level:
     com.test: debug

@@ -132,10 +132,24 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, File> implements Fi
             return false;
         }
 
-        if (!file.getUserId().equals(userId) && (user.getRole() == null || user.getRole() != 1)) {
-            log.warn("用户 {} 尝试删除非己文件 {} 且无管理员权限，操作被拒绝", userId, id);
+        // --- 修复开始：扩展权限校验逻辑 ---
+
+        // 1. 判断是否是文件所有者
+        boolean isOwner = file.getUserId().equals(userId);
+
+        // 2. 判断是否是管理员
+        boolean isAdmin = (user.getRole() != null && user.getRole() == 1);
+
+        // 3. 判断是否拥有文件夹的读写(2)或管理(3)权限
+        Integer permission = folderPermissionService.checkPermission(userId, file.getFolderId());
+        boolean hasFolderPermission = (permission != null && permission >= 2);
+
+        // 如果既不是所有者，也不是管理员，也没有文件夹权限，则拒绝删除
+        if (!isOwner && !isAdmin && !hasFolderPermission) {
+            log.warn("用户 {} 尝试删除文件 {} 但无权限（非管理员、非所有者、无文件夹写权限）", userId, id);
             return false;
         }
+        // --- 修复结束 ---
 
         operationLogClient.deleteByFileId(id);
         boolean deleteResult = removeById(id);
@@ -204,13 +218,17 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, File> implements Fi
         }
 
         for (File file : files) {
-            operationLogClient.deleteByFileId(file.getId());
-            removeById(file.getId());
-            try {
-                Path filePath = Paths.get(file.getFilePath());
-                Files.deleteIfExists(filePath);
-            } catch (IOException e) {
-                log.error("删除本地文件失败: " + file.getFilePath(), e);
+            // 批量删除时只删除用户自己上传的文件，避免误删有权限访问但他人的文件
+            // 注意：selectByUserId 如果返回了共享文件，这里需要过滤
+            if (file.getUserId().equals(userId)) {
+                operationLogClient.deleteByFileId(file.getId());
+                removeById(file.getId());
+                try {
+                    Path filePath = Paths.get(file.getFilePath());
+                    Files.deleteIfExists(filePath);
+                } catch (IOException e) {
+                    log.error("删除本地文件失败: " + file.getFilePath(), e);
+                }
             }
         }
         return true;

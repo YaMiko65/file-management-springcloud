@@ -114,5 +114,12 @@ public class AdminFolderController {
         return b;
     }
 
-
+    // 新增：端点
+    @GetMapping("/checkAndDeleteByCreator/{adminId}")
+    public boolean checkAndDeleteByCreator(@PathVariable("adminId") Long adminId){
+        log.debug("checkAndDeleteByCreator:接收到的参数：adminId:{}", adminId);
+        boolean b = folderService.checkAndDeleteByCreatorId(adminId);
+        log.debug("folderService.checkAndDeleteByCreatorId:{}", b);
+        return b;
+    }
 }

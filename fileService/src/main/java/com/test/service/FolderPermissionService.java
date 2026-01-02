@@ -19,4 +19,7 @@ public interface FolderPermissionService extends IService<FolderPermission> {
     boolean deleteByUserId(Long userId);
 
     boolean deletePermission(Long folderId, Long userId);
+
+    // 新增：根据文件夹ID删除所有权限（用于删除文件夹时级联清理）
+    boolean deleteByFolderId(Long folderId);
 }

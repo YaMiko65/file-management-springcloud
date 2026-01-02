@@ -25,7 +25,7 @@ public class FolderServiceImpl extends ServiceImpl<FolderMapper, Folder> impleme
     @Autowired
     private FolderMapper folderMapper;
     @Autowired
-    private FileMapper fileMapper; // 用于检查文件夹是否有文件
+    private FileMapper fileMapper;
 
     @Autowired
     private FolderPermissionService folderPermissionService;
@@ -56,27 +56,28 @@ public class FolderServiceImpl extends ServiceImpl<FolderMapper, Folder> impleme
             return false;
         }
         // 检查文件夹下是否有文件
-        int fileCount = fileMapper.countByFolderId(folderId); // 需在FileMapper中新增此方法
+        int fileCount = fileMapper.countByFolderId(folderId);
         if (fileCount > 0) {
             return false; // 文件夹非空，不允许删除
         }
+
+        // 修复：删除文件夹前，先删除关联的权限记录，防止脏数据
+        folderPermissionService.deleteByFolderId(folderId);
+
         return removeById(folderId);
     }
 
     @Override
     @Transactional
     public List<Folder> getAuthorizedFolders(Long userId) {
-        // 查询用户所有权限记录（权限≥2）
         List<FolderPermission> permissions = folderPermissionService.list(
                 new QueryWrapper<FolderPermission>()
                         .eq("user_id", userId)
-                        .ge("permission", 2) // 只保留读写（2）和管理（3）权限
+                        .ge("permission", 2)
         );
-        // 提取文件夹ID列表
         List<Long> folderIds = permissions.stream()
                 .map(FolderPermission::getFolderId)
                 .collect(Collectors.toList());
-        // 查询对应的文件夹
         if (folderIds.isEmpty()) {
             return new ArrayList<>();
         }
@@ -87,5 +88,36 @@ public class FolderServiceImpl extends ServiceImpl<FolderMapper, Folder> impleme
     @Transactional
     public IPage<Folder> getFoldersByAdmin(Page<Folder> page, Long adminId) {
         return folderMapper.selectByCreatorIdWithPage(page, adminId);
+    }
+
+    // 新增方法的实现
+    @Override
+    @Transactional
+    public boolean checkAndDeleteByCreatorId(Long adminId) {
+        // 1. 获取该管理员创建的所有文件夹
+        List<Folder> folders = folderMapper.selectByCreatorId(adminId);
+
+        if (folders == null || folders.isEmpty()) {
+            return true;
+        }
+
+        // 2. 预检查：是否有非空文件夹
+        for (Folder folder : folders) {
+            int fileCount = fileMapper.countByFolderId(folder.getId());
+            if (fileCount > 0) {
+                // 存在非空文件夹，禁止删除管理员
+                return false;
+            }
+        }
+
+        // 3. 执行删除：全是空文件夹，安全删除
+        for (Folder folder : folders) {
+            // 先删权限
+            folderPermissionService.deleteByFolderId(folder.getId());
+            // 再删文件夹
+            removeById(folder.getId());
+        }
+
+        return true;
     }
 }

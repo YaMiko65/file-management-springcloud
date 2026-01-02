@@ -18,4 +18,7 @@ public interface FolderService extends IService<Folder> {
     boolean deleteFolder(Long folderId, Long adminId);
     // 查询用户有读写/管理权限的文件夹
     List<Folder> getAuthorizedFolders(Long userId);
+
+    // 新增：检查并删除某管理员创建的所有文件夹（若有非空文件夹则返回false）
+    boolean checkAndDeleteByCreatorId(Long adminId);
 }

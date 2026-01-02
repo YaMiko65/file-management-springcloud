@@ -88,6 +88,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     @Transactional // 事务保证数据一致性
     public boolean deleteUser(Long userId) {
+        // 修复：删除用户前，先检查该用户（如果是管理员）是否创建了文件夹
+        // 如果有非空文件夹，checkAndDeleteByCreator 会返回 false，此时禁止删除用户
+        boolean canDelete = fileClient.checkAndDeleteByCreator(userId);
+        if (!canDelete) {
+            // 表示有非空文件夹，无法删除
+            return false;
+        }
+
         // 1. 删除用户的文件夹权限记录
         fileClient.deleteFolderByUserId(userId);
 

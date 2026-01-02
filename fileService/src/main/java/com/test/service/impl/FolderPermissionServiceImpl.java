@@ -25,12 +25,10 @@ public class FolderPermissionServiceImpl extends ServiceImpl<FolderPermissionMap
         FolderPermission existing = permissionMapper.selectByUserIdAndFolderId(userId, folderId);
 
         if (existing != null) {
-            // 如果权限已存在，直接更新权限字段和时间
             existing.setPermission(permission);
             existing.setUpdateTime(new Date());
             return updateById(existing);
         } else {
-            // 如果权限不存在，则执行新增
             FolderPermission newPermission = new FolderPermission();
             newPermission.setFolderId(folderId);
             newPermission.setUserId(userId);
@@ -51,7 +49,7 @@ public class FolderPermissionServiceImpl extends ServiceImpl<FolderPermissionMap
     @Transactional
     public Integer checkPermission(Long userId, Long folderId) {
         FolderPermission permission = permissionMapper.selectByUserIdAndFolderId(userId, folderId);
-        return permission != null ? permission.getPermission() : 0; // 0-无权限
+        return permission != null ? permission.getPermission() : 0;
     }
 
     @Override
@@ -69,6 +67,15 @@ public class FolderPermissionServiceImpl extends ServiceImpl<FolderPermissionMap
         QueryWrapper<FolderPermission> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("folder_id", folderId)
                 .eq("user_id", userId);
+        return remove(queryWrapper);
+    }
+
+    // 新增实现
+    @Override
+    @Transactional
+    public boolean deleteByFolderId(Long folderId) {
+        QueryWrapper<FolderPermission> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("folder_id", folderId);
         return remove(queryWrapper);
     }
 }

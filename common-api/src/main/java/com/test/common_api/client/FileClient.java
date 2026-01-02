@@ -65,4 +65,8 @@ public interface FileClient {
     public Integer checkPermission(@PathVariable("userId") Long userId,@PathVariable("folderId") Long folderId);
     @GetMapping("/admin/folders/deleteByUserId/{userId}")
     public boolean deleteFolderByUserId(@PathVariable("userId") Long userId);
+
+    // 新增：检查并删除某管理员创建的所有文件夹（修复删除管理员遗留数据问题）
+    @GetMapping("/admin/folders/checkAndDeleteByCreator/{adminId}")
+    public boolean checkAndDeleteByCreator(@PathVariable("adminId") Long adminId);
 }
