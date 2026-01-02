@@ -18,7 +18,7 @@ import java.util.List;
 @RestController
 @Slf4j
 public class FileController {
-    
+
     @Autowired
     private FileService fileService;
 
@@ -36,19 +36,26 @@ public class FileController {
         log.debug("fileService.getAll:{}",filePage);
         return (Page<File>) filePage;
     }
+
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public boolean upload(
-            @RequestPart("fileList") List<MultipartFile> fileList,
+            @RequestPart("file") List<MultipartFile> fileList, // 修改处：将 "fileList" 改为 "file" 以匹配 Client 端定义
             @RequestParam("userId") Long userId,
             @RequestParam("folderId") Long folderId,
             @RequestParam("ipAddress") String ipAddress
     ){
         log.debug("upload:接收到的参数：userId:{}\nfolderId:{}\nipAddress:{}",userId,folderId,ipAddress);
+        // 校验文件列表是否为空
+        if (fileList == null || fileList.isEmpty()) {
+            log.error("上传失败：文件列表为空");
+            return false;
+        }
         MultipartFile file = fileList.get(0);
         boolean upload = fileService.upload(file, userId, folderId, ipAddress);
         log.debug("fileService.upload:{}",upload);
         return upload;
     }
+
     @GetMapping("/getByUserId/{userId}")
     public List<File> getByUserId(@PathVariable("userId") Long userId){
         log.debug("getByUserId:接收到的参数：userId:{}",userId);
