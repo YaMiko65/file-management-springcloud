@@ -9,8 +9,21 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Excel工具类
+ * 提供Excel文件解析和处理功能
+ */
 public class ExcelUtils {
 
+    /**
+     * 解析Excel文件内容
+     * 将Excel文件中的数据解析为ExcelData对象列表
+     * 读取Excel文件的第1个工作表，从第2行开始读取（跳过表头），将每行数据映射为ExcelData对象
+     *
+     * @param file 要解析的Excel文件
+     * @return ExcelData对象列表
+     * @throws IOException 文件读取异常
+     */
     public static List<ExcelData> parseExcel(MultipartFile file) throws IOException {
         List<ExcelData> dataList = new ArrayList<>();
 
@@ -58,6 +71,13 @@ public class ExcelUtils {
         return dataList;
     }
 
+    /**
+     * 获取单元格的值
+     * 根据单元格类型返回相应的字符串值，支持字符串、数字、布尔值和日期类型的单元格
+     *
+     * @param cell Excel单元格
+     * @return 单元格的字符串值
+     */
     private static String getCellValue(Cell cell) {
         if (cell == null) return "";
 

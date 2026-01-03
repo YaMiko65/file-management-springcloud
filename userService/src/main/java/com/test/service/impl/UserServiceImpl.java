@@ -20,6 +20,7 @@ import java.util.List;
 
 /**
  * 用户服务实现类
+ * 实现用户登录、注册、信息管理等核心功能
  */
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
@@ -33,6 +34,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Autowired
     private OperationLogClient operationLogClient;
 
+    /**
+     * 用户登录验证
+     * 验证用户名和密码是否匹配
+     *
+     * @param username 用户名
+     * @param password 用户密码
+     * @return 登录成功的用户对象，验证失败则返回null
+     */
     @Override
     @Transactional
     public User login(String username, String password) {
@@ -43,12 +52,24 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return null;
     }
 
+    /**
+     * 根据用户名获取用户信息
+     *
+     * @param username 用户名
+     * @return 用户对象
+     */
     @Override
     @Transactional
     public User getByUsername(String username) {
         return userMapper.selectByUsername(username);
     }
 
+    /**
+     * 根据用户ID获取用户名
+     *
+     * @param userId 用户ID
+     * @return 用户名，如果用户不存在则返回"未知用户"
+     */
     @Override
     @Transactional
     public String getUsernameById(Long userId) {
@@ -56,12 +77,25 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return user != null ? user.getUsername() : "未知用户";
     }
 
+    /**
+     * 获取所有用户列表
+     *
+     * @return 所有用户列表
+     */
     @Override
     @Transactional
     public List<User> getAllUsers() {
         return userMapper.selectAll();
     }
 
+    /**
+     * 更新用户角色
+     * 更新指定用户的角色（普通用户或管理员），并防止删除最后一个管理员
+     *
+     * @param userId 用户ID
+     * @param role 新角色（0-普通用户，1-管理员）
+     * @return 更新是否成功
+     */
     @Override
     @Transactional
     public boolean updateUserRole(Long userId, Integer role) {
@@ -85,6 +119,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return updateById(user);
     }
 
+    /**
+     * 删除用户
+     * 删除指定用户及其关联的所有数据（文件、权限、日志等）
+     *
+     * @param userId 用户ID
+     * @return 删除是否成功
+     */
     @Override
     @Transactional // 事务保证数据一致性
     public boolean deleteUser(Long userId) {
@@ -110,12 +151,26 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return removeById(userId);
     }
 
+    /**
+     * 获取所有用户（分页）
+     *
+     * @param page 分页对象
+     * @return 分页的用户列表
+     */
     @Override
     @Transactional
     public IPage<User> getAllUsersPage(Page<User> page) {
         return userMapper.selectPage(page, null);
     }
 
+    /**
+     * 搜索用户（分页）
+     * 根据关键词搜索用户名或姓名匹配的用户
+     *
+     * @param page 分页对象
+     * @param keyword 搜索关键词
+     * @return 分页的用户列表
+     */
     @Override
     @Transactional
     public IPage<User> searchUsers(Page<User> page, String keyword) {
@@ -126,6 +181,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return userMapper.selectPage(page, queryWrapper);
     }
 
+    /**
+     * 更新用户密码
+     *
+     * @param userId 用户ID
+     * @param newPassword 新密码
+     * @return 更新是否成功
+     */
     @Override
     @Transactional
     public boolean updateUserPassword(Long userId, String newPassword) {
@@ -138,12 +200,27 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return updateById(user);
     }
 
+    /**
+     * 根据用户名查找用户
+     *
+     * @param username 用户名
+     * @return 用户对象
+     */
     @Override
     @Transactional
     public User findByUsername(String username) {
         return getOne(new QueryWrapper<User>().eq("username", username));
     }
 
+    /**
+     * 创建新用户
+     * 创建一个新用户，设置默认密码和角色
+     *
+     * @param username 用户名
+     * @param name 用户真实姓名
+     * @param defaultPassword 默认密码
+     * @return 创建是否成功
+     */
     @Override
     @Transactional
     public boolean createUser(String username, String name, String defaultPassword) {
@@ -165,6 +242,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     /**
      * 更新用户姓名
+     *
+     * @param userId 用户ID
+     * @param newName 新姓名
+     * @return 更新是否成功
      */
     @Override
     @Transactional
@@ -179,6 +260,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return updateById(user);
     }
 
+    /**
+     * 用户注册
+     * 注册新用户，设置默认角色为普通用户
+     *
+     * @param user 用户对象
+     * @return 注册是否成功
+     */
     // 支持注册时传入姓名
     @Override
     @Transactional

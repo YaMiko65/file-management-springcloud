@@ -25,6 +25,7 @@ import java.util.List;
 
 /**
  * 文件控制器
+ * 处理文件上传、下载、删除等UI相关的请求
  */
 @Controller
 @CrossOrigin
@@ -40,8 +41,16 @@ public class FileController {
     @Value("${file.upload-path}")
     private String uploadPath;
 
-    /**
+        /**
      * 管理员文件列表
+     * 显示管理员可访问的文件列表，支持分页和文件夹筛选
+     *
+     * @param folderId 文件夹ID（可选）
+     * @param pageNum 页码，默认为1
+     * @param pageSize 页面大小，默认为10
+     * @param model Spring MVC模型
+     * @param session HTTP会话
+     * @return 管理员文件列表页面
      */
     @GetMapping("/admin/files")
     public String allFileList(
@@ -89,8 +98,16 @@ public class FileController {
         return "admin/files";
     }
 
-    /**
+        /**
      * 上传文件
+     * 处理用户上传文件的请求
+     *
+     * @param file 上传的文件
+     * @param folderId 目标文件夹ID
+     * @param session HTTP会话
+     * @param request HTTP请求
+     * @param model Spring MVC模型
+     * @return 重定向到文件列表页面
      */
     @PostMapping("/files/upload")
     public String upload(@RequestParam("file") MultipartFile file,
@@ -104,12 +121,11 @@ public class FileController {
         }
 
         // 普通用户需校验文件夹权限（管理员不受限）
-        if (user.getRole() != 1) { // 1为管理员角色
+        if (user.getRole() != 1) {
             Integer permission = fileClient.checkPermission(user.getId(), folderId);
-            // 权限为0（无权限）或1（只读）时，禁止上传
             if (permission == null || permission < 2) {
                 model.addAttribute("error", "无权限上传文件到该文件夹（需读写或管理权限）");
-                return fileList(model, session); // 返回文件列表页并显示错误
+                return fileList(model, session);
             }
         }
 
@@ -119,7 +135,6 @@ public class FileController {
         }
 
         String ipAddress = getIpAddress(request);
-        // 上传时传入folderId，关联文件与文件夹
         List<MultipartFile> fileList = new StandardMultipartHttpServletRequest(request).getFiles("file");
         boolean result = fileClient.upload(fileList, user.getId(), folderId, ipAddress);
 
@@ -132,7 +147,71 @@ public class FileController {
         return "redirect:/files";
     }
 
-    // 用户文件列表页加载时，查询其有权限的文件夹和文件
+        /**
+     * 更新文件
+     * 处理用户更新文件的请求
+     *
+     * @param fileId 要更新的文件ID
+     * @param file 新的文件内容
+     * @param session HTTP会话
+     * @param request HTTP请求
+     * @param model Spring MVC模型
+     * @return 重定向到文件列表页面
+     */
+    @PostMapping("/files/update")
+    public String update(@RequestParam("fileId") Long fileId,
+                         @RequestParam("file") MultipartFile file,
+                         HttpSession session,
+                         HttpServletRequest request,
+                         Model model) {
+        User user = (User) session.getAttribute("user");
+        if (user == null) {
+            return "redirect:/login";
+        }
+
+        if (file.isEmpty()) {
+            model.addAttribute("error", "请选择新的文件");
+            return fileList(model, session);
+        }
+
+        // 先获取文件信息以检查权限（虽然Service层也会检查，但Controller层先拦截可优化体验）
+        File existingFile = fileClient.getById(fileId);
+        if (existingFile == null) {
+            model.addAttribute("error", "文件不存在");
+            return fileList(model, session);
+        }
+
+        // 检查权限：管理员 OR 文件所有者 OR 文件夹有写权限
+        boolean isOwner = existingFile.getUserId().equals(user.getId());
+        boolean isAdmin = user.getRole() == 1;
+        Integer permission = fileClient.checkPermission(user.getId(), existingFile.getFolderId());
+        boolean hasWritePerm = (permission != null && permission >= 2);
+
+        if (!isOwner && !isAdmin && !hasWritePerm) {
+            model.addAttribute("error", "无权修改此文件");
+            return fileList(model, session);
+        }
+
+        String ipAddress = getIpAddress(request);
+        boolean result = fileClient.update(fileId, file, user.getId(), ipAddress);
+
+        if (result) {
+            model.addAttribute("message", "文件修改成功");
+        } else {
+            model.addAttribute("error", "文件修改失败");
+        }
+
+        return "redirect:/files";
+    }
+
+    /**
+     * 用户文件列表页
+     * 用户文件列表页加载时，查询其有权限的文件夹和文件
+     *
+     * @param model Spring MVC模型
+     * @param session HTTP会话
+     * @return 用户文件列表页面
+     */
     @GetMapping("/files")
     public String fileList(Model model, HttpSession session) {
         User user = (User) session.getAttribute("user");
@@ -140,11 +219,8 @@ public class FileController {
             return "redirect:/login";
         }
 
-        // 修改：使用新接口获取用户可访问的所有文件（包括自己上传的和有权限查看的）
-        // 需确保 FileClient 中已添加 getAccessibleFiles 方法
         List<File> files = fileClient.getAccessibleFiles(user.getId());
 
-        // 填充上传者信息
         for(File f : files) {
             User u = userClient.getById(f.getUserId());
             if(u != null) {
@@ -155,12 +231,10 @@ public class FileController {
         model.addAttribute("files", files);
         model.addAttribute("user", user);
 
-        // 普通用户：查询有读写/管理权限的文件夹（用于上传时选择）
         if (user.getRole() != 1) {
             List<Folder> authorizedFolders = fileClient.getAuthorizedFolders(user.getId());
             model.addAttribute("authorizedFolders", authorizedFolders);
         } else {
-            // 管理员：显示所有文件夹
             List<Folder> allFolders = fileClient.list();
             model.addAttribute("authorizedFolders", allFolders);
         }
@@ -168,8 +242,15 @@ public class FileController {
         return "files";
     }
 
-    /**
+        /**
      * 下载文件
+     * 处理用户下载文件的请求
+     *
+     * @param id 文件ID
+     * @param response HTTP响应
+     * @param session HTTP会话
+     * @param request HTTP请求
+     * @throws IOException 文件操作异常
      */
     @GetMapping("/files/download/{id}")
     public void download(@PathVariable("id") Long id,
@@ -188,22 +269,18 @@ public class FileController {
             return;
         }
 
-        // 检查权限：管理员 OR 文件夹有读取权限(>=1)
         Integer permission = fileClient.checkPermission(user.getId(), file.getFolderId());
         if (user.getRole() != 1 && (permission == null || permission < 1)) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "无权下载此文件");
             return;
         }
 
-        // 记录下载日志
         String ipAddress = getIpAddress(request);
         operationLogClient.recordLog(user.getId(), file.getId(), "download", ipAddress);
 
-        // 设置响应头
         response.setContentType(file.getFileType());
         response.setHeader("Content-Disposition", "attachment; filename=\"" + file.getFileName() + "\"");
 
-        // 读取文件并写入响应
         Path filePath = Paths.get(file.getFilePath());
         if (Files.exists(filePath)) {
             Files.copy(filePath, response.getOutputStream());
@@ -212,8 +289,14 @@ public class FileController {
         }
     }
 
-    /**
+        /**
      * 删除文件
+     * 处理用户删除文件的请求
+     *
+     * @param id 文件ID
+     * @param session HTTP会话
+     * @param model Spring MVC模型
+     * @return 重定向到相应页面
      */
     @GetMapping("/files/delete/{id}")
     public String delete(@PathVariable("id") Long id,
@@ -228,9 +311,6 @@ public class FileController {
         if (file == null) {
             model.addAttribute("error", "文件不存在");
         } else {
-            // 权限检查：
-            // 1. 管理员
-            // 2. 拥有该文件夹的读写(2)或管理(3)权限
             Integer permission = fileClient.checkPermission(user.getId(), file.getFolderId());
             boolean canDelete = user.getRole() == 1 || (permission != null && permission >= 2);
 
@@ -246,7 +326,6 @@ public class FileController {
             }
         }
 
-        // 根据用户角色返回不同页面
         if (user.getRole() == 1) {
             return "redirect:/admin/files";
         } else {
@@ -256,6 +335,10 @@ public class FileController {
 
     /**
      * 获取IP地址
+     * 从HTTP请求中获取客户端真实IP地址
+     *
+     * @param request HTTP请求
+     * @return 客户端IP地址
      */
     private String getIpAddress(HttpServletRequest request) {
         String ip = request.getHeader("x-forwarded-for");

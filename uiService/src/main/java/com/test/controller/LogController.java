@@ -19,6 +19,7 @@ import javax.servlet.http.HttpSession;
 
 /**
  * 操作日志控制器
+ * 处理操作日志管理的UI请求
  */
 @Controller
 @CrossOrigin
@@ -31,6 +32,16 @@ public class LogController {
     @Autowired // 注入文件服务
     private FileClient fileClient;
     
+    /**
+     * 操作日志列表（仅管理员可访问）
+     * 显示系统中的操作日志，支持分页
+     *
+     * @param pageNum 页码，默认为1
+     * @param pageSize 页面大小，默认为10
+     * @param model Spring MVC模型
+     * @param session HTTP会话
+     * @return 操作日志列表页面
+     */
     /**
      * 操作日志列表（仅管理员可访问）
      */

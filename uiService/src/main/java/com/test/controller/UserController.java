@@ -9,6 +9,10 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpSession;
 
+/**
+ * 用户控制器
+ * 处理用户个人中心相关的UI请求
+ */
 @Controller
 @RequestMapping("/user")
 @CrossOrigin
@@ -17,6 +21,14 @@ public class UserController {
     @Autowired
     private UserClient userClient;
 
+    /**
+     * 显示用户自己的密码修改页面
+     * 显示用户修改自己密码的页面
+     *
+     * @param session HTTP会话
+     * @param model Spring MVC模型
+     * @return 用户密码修改页面
+     */
     // 显示用户自己的密码修改页面
     @GetMapping("/editPassword")
     public String showUserEditPasswordPage(HttpSession session, Model model) {
@@ -27,6 +39,17 @@ public class UserController {
         return "user/edit-password";
     }
 
+    /**
+     * 处理用户自己的密码修改提交
+     * 处理用户提交的密码修改请求
+     *
+     * @param oldPassword 原密码
+     * @param newPassword 新密码
+     * @param confirmPassword 确认密码
+     * @param session HTTP会话
+     * @param model Spring MVC模型
+     * @return 修改成功则跳转到登录页面，失败则返回密码修改页面
+     */
     // 处理用户自己的密码修改提交
     @PostMapping("/updatePassword")
     public String updateOwnPassword(

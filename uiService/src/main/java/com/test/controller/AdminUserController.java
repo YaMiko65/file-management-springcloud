@@ -13,6 +13,10 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpSession;
 
+/**
+ * 管理员用户管理控制器
+ * 处理管理员对用户管理的UI请求
+ */
 @Controller
 @RequestMapping("/admin/users")
 @CrossOrigin
@@ -28,6 +32,17 @@ public class AdminUserController {
     @Autowired
     private FileClient fileClient;
 
+    /**
+     * 显示用户列表（支持搜索）
+     * 显示系统中的所有用户，支持分页和关键词搜索
+     *
+     * @param pageNum 页码，默认为1
+     * @param pageSize 页面大小，默认为10
+     * @param keyword 搜索关键词（可选）
+     * @param session HTTP会话
+     * @param model Spring MVC模型
+     * @return 用户列表页面
+     */
     /**
      * 显示用户列表（支持搜索）
      */
@@ -69,6 +84,15 @@ public class AdminUserController {
 
     /**
      * 更新用户角色
+     * 修改指定用户的角色（普通用户或管理员）
+     *
+     * @param userId 用户ID
+     * @param role 新角色（0-普通用户，1-管理员）
+     * @param model Spring MVC模型
+     * @return 重定向到用户列表页面
+     */
+    /**
+     * 更新用户角色
      */
     @PostMapping("/updateRole")
     public String updateRole(@RequestParam Long userId,
@@ -83,6 +107,15 @@ public class AdminUserController {
         return "redirect:/admin/users";
     }
 
+    /**
+     * 显示修改姓名页面
+     * 显示用于修改用户姓名的页面
+     *
+     * @param userId 用户ID
+     * @param session HTTP会话
+     * @param model Spring MVC模型
+     * @return 修改用户姓名页面
+     */
     /**
      * 显示修改姓名页面
      */
@@ -108,6 +141,16 @@ public class AdminUserController {
         return "admin/edit-user-name";
     }
 
+    /**
+     * 处理姓名修改提交
+     * 处理用户提交的姓名修改请求
+     *
+     * @param userId 用户ID
+     * @param newName 新姓名
+     * @param session HTTP会话
+     * @param model Spring MVC模型
+     * @return 重定向到用户列表页面
+     */
     /**
      * 处理姓名修改提交
      */
@@ -139,6 +182,15 @@ public class AdminUserController {
         return "redirect:/admin/users";
     }
 
+    /**
+     * 删除用户
+     * 删除指定ID的用户及其关联的所有数据
+     *
+     * @param userId 用户ID
+     * @param session HTTP会话
+     * @param model Spring MVC模型
+     * @return 重定向到用户列表页面
+     */
     /**
      * 删除用户
      */
@@ -177,6 +229,15 @@ public class AdminUserController {
         return "redirect:/admin/users";
     }
 
+    /**
+     * 显示修改密码页面
+     * 显示用于修改用户密码的页面
+     *
+     * @param userId 用户ID
+     * @param session HTTP会话
+     * @param model Spring MVC模型
+     * @return 修改密码页面
+     */
     // 显示修改密码页面
     @GetMapping("/editPassword/{userId}")
     public String showEditPasswordPage(@PathVariable Long userId, HttpSession session, Model model) {
@@ -190,6 +251,15 @@ public class AdminUserController {
     }
 
 
+    /**
+     * 处理修改密码提交
+     * 处理用户提交的密码修改请求
+     *
+     * @param userId 用户ID
+     * @param newPassword 新密码
+     * @param model Spring MVC模型
+     * @return 重定向到用户列表页面
+     */
     // 处理修改密码提交
     @PostMapping("/updatePassword")
     public String updatePassword(@RequestParam Long userId,

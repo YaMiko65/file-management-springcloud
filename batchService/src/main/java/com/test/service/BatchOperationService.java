@@ -14,6 +14,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 批量操作服务
+ * 处理从Excel文件中批量导入的权限分配等操作
+ * 包括批量创建文件夹、用户和分配权限的功能
+ */
 @Service
 public class BatchOperationService {
 
@@ -26,6 +31,12 @@ public class BatchOperationService {
     /**
      * 处理Excel批量操作
      * 修复缺陷6：增加管理员权限验证
+     * 遍历Excel数据，批量创建文件夹、用户并分配权限
+     * 如果操作用户不是管理员，则返回全0结果
+     *
+     * @param dataList 从Excel解析出的数据列表
+     * @param adminId 执行操作的管理员ID
+     * @return 操作结果统计，包含文件夹、用户和权限的创建数量
      */
     @Transactional
     public Map<String, Integer> processExcelData(List<ExcelData> dataList, Long adminId) {
@@ -83,6 +94,10 @@ public class BatchOperationService {
 
     /**
      * 辅助方法：验证用户是否为管理员
+     * 通过查询用户信息并检查角色字段来验证用户是否为管理员
+     *
+     * @param userId 用户ID
+     * @return 是否为管理员
      */
     private boolean isAdmin(Long userId) {
         if (userId == null) {
@@ -93,6 +108,15 @@ public class BatchOperationService {
         return user != null && user.getRole() != null && user.getRole() == 1;
     }
 
+    /**
+     * 获取或创建文件夹
+     * 如果文件夹已存在则返回现有文件夹，否则创建新的文件夹
+     * 首先查询是否存在同名且同创建者的文件夹，如果不存在则创建
+     *
+     * @param folderName 文件夹名称
+     * @param adminId 管理员ID
+     * @return 文件夹对象
+     */
     // 获取或创建文件夹
     private Folder getOrCreateFolder(String folderName, Long adminId) {
         // 检查文件夹是否已存在
@@ -121,6 +145,15 @@ public class BatchOperationService {
         return null;
     }
 
+    /**
+     * 获取或创建用户
+     * 如果用户已存在则返回现有用户，否则创建新的用户
+     * 首先通过用户名查询用户，如果不存在则使用用户名+123作为默认密码创建新用户
+     *
+     * @param username 用户名
+     * @param name 用户真实姓名
+     * @return 用户对象
+     */
     // 获取或创建用户
     private User getOrCreateUser(String username, String name) {
         User existingUser = userClient.findByUsername(username);

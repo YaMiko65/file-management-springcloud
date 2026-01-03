@@ -19,6 +19,10 @@ import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * 文件夹服务实现类
+ * 实现文件夹的创建、删除、查询等核心功能
+ */
 @Service
 public class FolderServiceImpl extends ServiceImpl<FolderMapper, Folder> implements FolderService {
 
@@ -30,6 +34,14 @@ public class FolderServiceImpl extends ServiceImpl<FolderMapper, Folder> impleme
     @Autowired
     private FolderPermissionService folderPermissionService;
 
+    /**
+     * 创建文件夹
+     * 为指定管理员创建一个新的文件夹
+     *
+     * @param folderName 文件夹名称
+     * @param adminId 管理员ID
+     * @return 创建是否成功
+     */
     @Override
     @Transactional
     public boolean createFolder(String folderName, Long adminId) {
@@ -41,12 +53,26 @@ public class FolderServiceImpl extends ServiceImpl<FolderMapper, Folder> impleme
         return save(folder);
     }
 
+    /**
+     * 获取管理员创建的文件夹列表
+     *
+     * @param adminId 管理员ID
+     * @return 管理员创建的文件夹列表
+     */
     @Override
     @Transactional
     public List<Folder> getFoldersByAdmin(Long adminId) {
         return folderMapper.selectByCreatorId(adminId);
     }
 
+    /**
+     * 删除文件夹
+     * 删除指定ID的文件夹，但仅当该文件夹为空且为当前管理员创建时才允许删除
+     *
+     * @param folderId 文件夹ID
+     * @param adminId 管理员ID
+     * @return 删除是否成功
+     */
     @Override
     @Transactional
     public boolean deleteFolder(Long folderId, Long adminId) {
@@ -67,6 +93,13 @@ public class FolderServiceImpl extends ServiceImpl<FolderMapper, Folder> impleme
         return removeById(folderId);
     }
 
+    /**
+     * 获取用户有权限访问的文件夹列表
+     * 获取用户拥有读写或管理权限的文件夹列表
+     *
+     * @param userId 用户ID
+     * @return 用户有权限访问的文件夹列表
+     */
     @Override
     @Transactional
     public List<Folder> getAuthorizedFolders(Long userId) {
@@ -84,12 +117,26 @@ public class FolderServiceImpl extends ServiceImpl<FolderMapper, Folder> impleme
         return list(new QueryWrapper<Folder>().in("id", folderIds));
     }
 
+    /**
+     * 获取管理员创建的文件夹列表（分页）
+     *
+     * @param page 分页对象
+     * @param adminId 管理员ID
+     * @return 分页的文件夹列表
+     */
     @Override
     @Transactional
     public IPage<Folder> getFoldersByAdmin(Page<Folder> page, Long adminId) {
         return folderMapper.selectByCreatorIdWithPage(page, adminId);
     }
 
+    /**
+     * 检查并删除某管理员创建的所有文件夹
+     * 在删除管理员前，先检查并删除该管理员创建的所有文件夹
+     *
+     * @param adminId 管理员ID
+     * @return 删除是否成功
+     */
     // 新增方法的实现
     @Override
     @Transactional

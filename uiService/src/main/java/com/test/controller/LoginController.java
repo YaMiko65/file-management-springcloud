@@ -15,6 +15,7 @@ import javax.servlet.http.HttpSession;
 
 /**
  * 登录控制器
+ * 处理用户登录、注册、退出等认证相关的UI请求
  */
 @Controller
 @Slf4j
@@ -26,6 +27,12 @@ public class LoginController {
     
     /**
      * 登录页面
+     * 显示用户登录页面
+     *
+     * @return 登录页面
+     */
+    /**
+     * 登录页面
      */
     @GetMapping("/login")
     public String loginPage() {
@@ -33,6 +40,16 @@ public class LoginController {
         return "login";
     }
     
+    /**
+     * 用户登录
+     * 处理用户登录请求，验证用户名和密码
+     *
+     * @param username 用户名
+     * @param password 用户密码
+     * @param model Spring MVC模型
+     * @param session HTTP会话
+     * @return 登录成功则根据角色重定向到相应页面，失败则返回登录页面
+     */
     /**
      * 用户登录
      */
@@ -60,12 +77,29 @@ public class LoginController {
     
     /**
      * 用户注册页面
+     * 显示用户注册页面
+     *
+     * @return 注册页面
+     */
+    /**
+     * 用户注册页面
      */
     @GetMapping("/register")
     public String registerPage() {
         return "register";
     }
     
+    /**
+     * 用户注册
+     * 处理用户注册请求，创建新用户账户
+     *
+     * @param username 用户名
+     * @param password 用户密码
+     * @param confirmPassword 确认密码
+     * @param name 用户真实姓名
+     * @param model Spring MVC模型
+     * @return 注册成功则跳转到登录页面，失败则返回注册页面
+     */
     /**
      * 用户注册
      */
@@ -99,6 +133,13 @@ public class LoginController {
         }
     }
     
+    /**
+     * 用户退出
+     * 处理用户退出请求，清除会话信息
+     *
+     * @param session HTTP会话
+     * @return 重定向到登录页面
+     */
     /**
      * 用户退出
      */

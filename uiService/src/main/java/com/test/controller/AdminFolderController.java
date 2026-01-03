@@ -22,6 +22,7 @@ import java.util.Map;
 
 /**
  * 管理员文件夹管理
+ * 处理管理员对文件夹和权限管理的UI请求
  */
 
 @Controller
@@ -37,6 +38,16 @@ public class AdminFolderController {
     @Autowired
     private UserClient userClient;
 
+    /**
+     * 文件夹管理首页
+     * 显示管理员创建的文件夹列表，支持分页
+     *
+     * @param pageNum 页码，默认为1
+     * @param pageSize 页面大小，默认为10
+     * @param session HTTP会话
+     * @param model Spring MVC模型
+     * @return 文件夹列表页面
+     */
     // 文件夹管理首页
     @GetMapping
     public String folderList(
@@ -66,6 +77,15 @@ public class AdminFolderController {
         return "admin/folders";
     }
 
+    /**
+     * 创建文件夹
+     * 处理管理员创建新文件夹的请求
+     *
+     * @param folderName 文件夹名称
+     * @param session HTTP会话
+     * @param model Spring MVC模型
+     * @return 重定向到文件夹列表页面
+     */
     // 创建文件夹
     @PostMapping("/create")
     public String createFolder(@RequestParam("folderName") String folderName,
@@ -83,6 +103,15 @@ public class AdminFolderController {
         return "redirect:/admin/folders";
     }
 
+    /**
+     * 权限管理页面
+     * 显示文件夹权限列表并提供授予权限功能
+     *
+     * @param folderId 文件夹ID
+     * @param session HTTP会话
+     * @param model Spring MVC模型
+     * @return 权限管理页面
+     */
     // 权限管理页面（显示文件夹权限并授予权限）
     @GetMapping("/permissions/{folderId}")
     public String managePermissions(@PathVariable("folderId") Long folderId,
@@ -118,6 +147,17 @@ public class AdminFolderController {
         return "admin/folder-permissions";
     }
 
+    /**
+     * 授予权限
+     * 为用户授予对文件夹的访问权限
+     *
+     * @param folderId 文件夹ID
+     * @param userId 用户ID
+     * @param permission 权限级别（1-只读，2-读写，3-管理）
+     * @param session HTTP会话
+     * @param model Spring MVC模型
+     * @return 重定向到权限管理页面
+     */
     // 授予权限
     @PostMapping("/permissions/grant")
     public String grantPermission(@RequestParam("folderId") Long folderId,
@@ -137,6 +177,15 @@ public class AdminFolderController {
         return "redirect:/admin/folders/permissions/" + folderId;
     }
 
+    /**
+     * 删除文件夹
+     * 删除指定ID的文件夹（仅当文件夹为空时才允许删除）
+     *
+     * @param folderId 文件夹ID
+     * @param session HTTP会话
+     * @param model Spring MVC模型
+     * @return 重定向到文件夹列表页面
+     */
     // 删除文件夹
     @GetMapping("/delete/{folderId}")
     public String deleteFolder(@PathVariable("folderId") Long folderId,
@@ -154,6 +203,17 @@ public class AdminFolderController {
         return "redirect:/admin/folders";
     }
 
+    /**
+     * 处理权限修改
+     * 更新用户对文件夹的访问权限
+     *
+     * @param folderId 文件夹ID
+     * @param userId 用户ID
+     * @param permission 权限级别（1-只读，2-读写，3-管理）
+     * @param session HTTP会话
+     * @param model Spring MVC模型
+     * @return 重定向到权限管理页面
+     */
     // 处理权限修改
     @PostMapping("/permissions/update")
     public String updatePermission(@RequestParam("folderId") Long folderId,
@@ -174,6 +234,14 @@ public class AdminFolderController {
         return "redirect:/admin/folders/permissions/" + folderId;
     }
 
+    /**
+     * 显示批量上传页面
+     * 显示用于批量处理权限分配的Excel上传页面
+     *
+     * @param session HTTP会话
+     * @param model Spring MVC模型
+     * @return 批量上传页面
+     */
     @GetMapping("/batch-upload")
     public String showBatchUploadPage(HttpSession session, Model model) {
         User admin = (User) session.getAttribute("user");
@@ -184,6 +252,15 @@ public class AdminFolderController {
         return "admin/batch-upload";
     }
 
+    /**
+     * 处理批量上传
+     * 解析上传的Excel文件并批量处理权限分配
+     *
+     * @param file 上传的Excel文件
+     * @param session HTTP会话
+     * @param model Spring MVC模型
+     * @return 批量上传页面，显示处理结果
+     */
     @PostMapping("/batch-process")
     public String processBatchUpload(
             @RequestParam("file") MultipartFile file,
@@ -223,6 +300,16 @@ public class AdminFolderController {
         return "admin/batch-upload";
     }
 
+    /**
+     * 删除权限
+     * 撤销用户对文件夹的访问权限
+     *
+     * @param folderId 文件夹ID
+     * @param userId 用户ID
+     * @param session HTTP会话
+     * @param model Spring MVC模型
+     * @return 重定向到权限管理页面
+     */
     @PostMapping("/permissions/delete")
     public String deletePermission(
             @RequestParam("folderId") Long folderId,

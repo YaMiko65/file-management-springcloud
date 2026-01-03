@@ -157,6 +157,18 @@
                         <td>
                             <div class="file-actions">
                                 <a th:href="@{/files/download/{id}(id=${file.id})}" class="btn btn-sm btn-outline-primary">下载</a>
+
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-warning"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#updateModal"
+                                        th:if="${file.currentUserPermission != null and file.currentUserPermission >= 2}"
+                                        th:data-file-id="${file.id}"
+                                        th:data-file-name="${file.fileName}"
+                                        onclick="setUpdateModal(this)">
+                                    修改
+                                </button>
+
                                 <a th:if="${file.currentUserPermission != null and file.currentUserPermission >= 2}"
                                    th:href="@{/files/delete/{id}(id=${file.id})}"
                                    class="btn btn-sm btn-outline-danger"
@@ -174,86 +186,127 @@
     </div>
 </div>
 
-<script>
-    // JS 代码保持不变
-    document.addEventListener('DOMContentLoaded', function() {
-        const uploadBtn = document.getElementById('uploadBtn');
-        const fileInput = document.getElementById('file');
-        const folderSelect = document.getElementById('folderId');
-        const progressContainer = document.getElementById('progressContainer');
-        const progressBar = document.getElementById('progressBar');
-        const progressText = document.getElementById('progressText');
-        const btnText = document.getElementById('btnText');
-        const btnLoading = document.getElementById('btnLoading');
+<div class="modal fade" id="updateModal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="updateModalLabel">修改文件（重传）</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form th:action="@{/files/update}" method="post" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <input type="hidden" name="fileId" id="modalFileId">
+                    <p>正在修改文件: <strong id="modalFileName"></strong></p>
+                    <div class="mb-3">
+                        <label for="updateFile" class="form-label">选择新文件覆盖旧文件</label>
+                        <input type="file" class="form-control" id="updateFile" name="file" required>
+                        <div class="form-text">注意：这将替换原文件内容，文件名也将更新为新文件名。</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-warning">确认修改</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
-        uploadBtn.addEventListener('click', function() {
-            if (!fileInput.files.length) {
-                alert('请选择文件');
-                return;
-            }
-            if (!folderSelect.value) {
-                alert('请选择课程');
-                return;
-            }
+    <!-- JavaScript脚本 - 处理文件上传和模态框功能 -->
+    <script>
+        // 设置模态框数据
+        function setUpdateModal(button) {
+            const fileId = button.getAttribute('data-file-id');
+            const fileName = button.getAttribute('data-file-name');
+            document.getElementById('modalFileId').value = fileId;
+            document.getElementById('modalFileName').textContent = fileName;
+        }
 
-            const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
-            formData.append('folderId', folderSelect.value);
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取DOM元素
+            const uploadBtn = document.getElementById('uploadBtn');
+            const fileInput = document.getElementById('file');
+            const folderSelect = document.getElementById('folderId');
+            const progressContainer = document.getElementById('progressContainer');
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            const btnText = document.getElementById('btnText');
+            const btnLoading = document.getElementById('btnLoading');
 
-            uploadBtn.disabled = true;
-            btnText.classList.add('d-none');
-            btnLoading.classList.remove('d-none');
-            progressContainer.classList.remove('d-none');
-            progressText.classList.remove('d-none');
-            progressText.textContent = '准备上传...';
-
-            const xhr = new XMLHttpRequest();
-            xhr.open('POST', '/files/upload', true);
-
-            xhr.upload.addEventListener('progress', function(e) {
-                if (e.lengthComputable) {
-                    const percent = Math.round((e.loaded / e.total) * 100);
-                    progressBar.style.width = percent + '%';
-                    progressText.textContent = `上传中... ${percent}%`;
+            // 上传按钮点击事件处理
+            uploadBtn.addEventListener('click', function() {
+                if (!fileInput.files.length) {
+                    alert('请选择文件');
+                    return;
                 }
-            });
+                if (!folderSelect.value) {
+                    alert('请选择课程');
+                    return;
+                }
 
-            xhr.onload = function() {
-                if (xhr.status === 200) {
-                    progressText.textContent = '上传成功！正在刷新列表...';
-                    progressBar.style.width = '100%';
-                    setTimeout(() => window.location.reload(), 800);
-                } else {
-                    progressText.textContent = '上传失败，请重试';
+                const formData = new FormData();
+                formData.append('file', fileInput.files[0]);
+                formData.append('folderId', folderSelect.value);
+
+                // 更新UI状态
+                uploadBtn.disabled = true;
+                btnText.classList.add('d-none');
+                btnLoading.classList.remove('d-none');
+                progressContainer.classList.remove('d-none');
+                progressText.classList.remove('d-none');
+                progressText.textContent = '准备上传...';
+
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '/files/upload', true);
+
+                // 上传进度处理
+                xhr.upload.addEventListener('progress', function(e) {
+                    if (e.lengthComputable) {
+                        const percent = Math.round((e.loaded / e.total) * 100);
+                        progressBar.style.width = percent + '%';
+                        progressText.textContent = `上传中... ${percent}%`;
+                    }
+                });
+
+                // 上传完成处理
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        progressText.textContent = '上传成功！正在刷新列表...';
+                        progressBar.style.width = '100%';
+                        setTimeout(() => window.location.reload(), 800);
+                    } else {
+                        progressText.textContent = '上传失败，请重试';
+                        progressBar.className = 'progress-bar bg-danger';
+                        setTimeout(() => {
+                            resetUploadState();
+                        }, 2000);
+                    }
+                };
+
+                // 上传错误处理
+                xhr.onerror = function() {
+                    progressText.textContent = '网络错误，请检查连接';
                     progressBar.className = 'progress-bar bg-danger';
                     setTimeout(() => {
                         resetUploadState();
                     }, 2000);
-                }
-            };
+                };
 
-            xhr.onerror = function() {
-                progressText.textContent = '网络错误，请检查连接';
-                progressBar.className = 'progress-bar bg-danger';
-                setTimeout(() => {
-                    resetUploadState();
-                }, 2000);
-            };
+                xhr.send(formData);
+            });
 
-            xhr.send(formData);
+            // 重置上传状态
+            function resetUploadState() {
+                uploadBtn.disabled = false;
+                btnText.classList.remove('d-none');
+                btnLoading.classList.add('d-none');
+                progressContainer.classList.add('d-none');
+                progressText.classList.add('d-none');
+                progressBar.style.width = '0%';
+                progressBar.className = 'progress-bar progress-bar-striped progress-bar-animated';
+            }
         });
-
-        function resetUploadState() {
-            uploadBtn.disabled = false;
-            btnText.classList.remove('d-none');
-            btnLoading.classList.add('d-none');
-            progressContainer.classList.add('d-none');
-            progressText.classList.add('d-none');
-            progressBar.style.width = '0%';
-            progressBar.className = 'progress-bar progress-bar-striped progress-bar-animated';
-        }
-    });
-</script>
+    </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/js/bootstrap.bundle.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 </body>

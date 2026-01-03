@@ -19,6 +19,11 @@ public interface FileService extends IService<File> {
     boolean upload(MultipartFile file, Long userId, Long folderId, String ipAddress);
 
     /**
+     * 更新文件（重传）
+     */
+    boolean update(Long fileId, MultipartFile file, Long userId, String ipAddress);
+
+    /**
      * 删除文件
      */
     boolean delete(Long id, Long userId);
@@ -26,13 +31,12 @@ public interface FileService extends IService<File> {
     File getById(Long id);
 
     /**
-     * 根据用户ID获取文件（通常用于“我的文件”）
+     * 根据用户ID获取文件
      */
     List<File> getByUserId(Long userId);
 
     /**
-     * 获取用户有权限访问的所有文件（包含自己上传的和文件夹授权的）
-     * 修复：新增接口方法以解决Controller爆红
+     * 获取用户有权限访问的所有文件
      */
     List<File> getAccessibleFiles(Long userId);
 
